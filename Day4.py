@@ -17,5 +17,5 @@ for x in matches.keys():
     for m in range(x+1, min(x+1+matches[x], size)):
         count[m] += count[x]
 part2answer = sum(count.values())
-print("Part 2 answer: ",part2answer)
+print("Part 2 answer: ", part2answer)
 
