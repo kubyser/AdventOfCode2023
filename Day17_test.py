@@ -1,6 +1,7 @@
 import time
+import heapq
 
-f = open("resources/day17_test_input.txt", "r")
+f = open("resources/day17_input.txt", "r")
 lines = f.read().splitlines()
 f.close()
 data = []
@@ -40,36 +41,39 @@ def getDirections(x, y, direction, straigh):
     return res
 
 
-pool = {((1, 0, 'R', 0), 0), ((0, 1, 'D', 0), 0)}
-#visited = {(0, 0, 'R', 0): 0}
-visited = {(0, 0): 0}
+def distance(x, y):
+    dist = width-1-x + height-1-y
+    return dist
+
+
+pool = []
+heapq.heappush(pool, (0, (1, 0, 'R', 0, 0)))
+heapq.heappush(pool, (0, (0, 1, 'D', 0, 0)))
+visited = {}
 res = None
 
 start = time.time()
-while len(pool) > 0:
-    cell = min(pool, key=lambda x: x[1])
-    pool.remove(cell)
-    x = cell[0][0]
-    y = cell[0][1]
-    direction = cell[0][2]
-    straight = cell[0][3]
-    heatLoss = cell[1]
+while pool:
+    cell = heapq.heappop(pool)
+    x = cell[1][0]
+    y = cell[1][1]
+    direction = cell[1][2]
+    straight = cell[1][3]
+    heatLoss = cell[1][4]
     vCell = x, y, direction, straight if straight < 3 else -1
     if vCell in visited:
-        #if (x, y) in visited:
         vis = visited[vCell]
         if heatLoss >= vis[0] and straight >= vis[1]:
             continue
     visited[vCell] = (heatLoss, straight)
-    #visited[(x, y)] = heatLoss
     heatLoss += data[y][x]
     if x == width-1 and y == height-1 and straight >= 3:
-        if res is None or res > heatLoss:
-            res = heatLoss
-        continue
+        res = heatLoss
+        break
     newDir = getDirections(x, y, direction, straight)
     for d in newDir:
-        pool.add(((d[0], d[1], d[2], d[3]), heatLoss))
+        priority = heatLoss + distance(d[0], d[1])
+        heapq.heappush(pool, (priority, (d[0], d[1], d[2], d[3], heatLoss)))
 end = time.time()
 
 print("Min heatloss: ", res)
