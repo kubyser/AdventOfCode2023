@@ -90,6 +90,7 @@ def findRange(target, ranges):
                     newRanges = adjustRangesTrue(newRanges, r[1])
                     if newRanges is None:
                         break
+                print(target, "["+str(getSize(newRanges))+"]", rName)
                 if rName == "in":
                     res += getSize(newRanges)
                 else:
