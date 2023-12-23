@@ -5,7 +5,7 @@ import time
 
 DIRECTIONS = {'>': [(1, 0)], '<': [(-1, 0)], '^': [(0, -1)], 'v': [(0, 1)],  '.': [(-1, 0), (1, 0), (0, -1), (0, 1)]}
 
-f = open("resources/day23_test_input.txt", "r")
+f = open("resources/day23_input.txt", "r")
 lines = f.read().splitlines()
 f.close()
 data = []
@@ -42,6 +42,10 @@ def findTunnelEnd(pos, prev):
         return pos, prev, length
 
 
+def hashOfSet(s):
+    ns = sorted(s)
+    return str(ns)
+
 def printMap(path):
     for y in range(height):
         s = ""
@@ -58,16 +62,24 @@ start = time.time()
 startPos = data[0].index('.'), 0
 finishPos = data[height-1].index('.'), height-1
 path = (startPos, None, set(), 0)
-foundPaths = []
-pathsQueue = queue.Queue()
+pathsCache = {}
+maxPath = 0
+pathsQueue = queue.LifoQueue()
 pathsQueue.put(path)
 #tunnelsCache = {}
 while not pathsQueue.empty():
+    #print(pathsQueue.qsize())
     path = pathsQueue.get()
     pos = path[0]
     prevPos = path[1]
     visited = path[2]
     length = path[3]
+    hashPos = (pos, hashOfSet(visited))
+    if hashPos in pathsCache:
+        knownLength = pathsCache[hashPos]
+        if knownLength >= length:
+            continue
+    pathsCache[hashPos] = length
     #if (pos, prevPos) in tunnelsCache:
     #    (pos, prevPos, lengthIncrement) = tunnelsCache[(pos, prevPos)]
     #    newLength += lengthIncrement
@@ -80,7 +92,9 @@ while not pathsQueue.empty():
     #    prevPos = prevPosNew
     length += lengthIncrement
     if pos == finishPos:
-        foundPaths.append(length)
+        if length > maxPath:
+            maxPath = length
+            print("Path found: ", length)
         continue
     neighbors = findNext(pos, prevPos, visited)
     prevPos = pos
@@ -95,8 +109,6 @@ while not pathsQueue.empty():
             newPath = (n, prevPos, visited, length+1)
         pathsQueue.put(newPath)
 end = time.time()
-maxPath = max(foundPaths)
-#printMap(maxPath)
 print("Max length: ", maxPath)
 print("Elapsed time: ", end-start)
 
