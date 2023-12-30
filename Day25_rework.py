@@ -3,7 +3,7 @@ import queue
 import sys
 import time
 
-f = open("resources/day25_test_input.txt", "r")
+f = open("resources/day25_input.txt", "r")
 lines = f.read().splitlines()
 f.close()
 sys.setrecursionlimit(100000)
@@ -28,90 +28,115 @@ def countGroups(items, brokenLinks = None):
     return 2, [len(visited), len(items)-len(visited)]
 
 
-visited = [None]*len(mapItemsToNums)
 timeCounter = 0
 allBrokenLinks = []
+visited = {}
 
-
-def dfs_findBridge(node, parent=None):
+def dfs_findBridge(node, brokenLinks=None, parent=None):
     global timeCounter
+    global visited
+    if parent is None:
+        visited = {}
     visited[node] = [timeCounter, timeCounter]
     timeCounter += 1
     for c in items[node]:
         if brokenLinks is None or (node, c) not in brokenLinks and (c, node) not in brokenLinks:
             if c == parent:
                 continue
-            if visited[c] is not None:
+            if c in visited:
                 newLow = min(visited[node][1], visited[c][0])
                 if newLow != visited[node][1]:
                     visited[node][1] = newLow
             else:
-                dfs_findBridge(c, node)
+                dfs_findBridge(c, brokenLinks, node)
                 newLow = min(visited[node][1], visited[c][1])
                 if newLow != visited[node][1]:
                     visited[node][1] = newLow
                 if (visited[c][1] > visited[node][0]):
-                    print("Bridge: ", node, c, mapNumsToItems[node], mapNumsToItems[c])
-                    print("Broken links: ", brokenLinks, [(mapNumsToItems[x[0]], mapNumsToItems[x[1]]) for x in [b for b in brokenLinks]])
-                    allBrokenLinks.append((node, c))
+                    print("Bridge: ", node, c)
+                    brokenLinks.append((node, c))
+                    print("Broken links: ", brokenLinks)
                     exit(0)
 
 
-def dfs(node, path=None):
+def pathsToTarget(node, target, path=None):
     if path is None:
-        path = {node}
+        path = [node]
     else:
-        path.add(node)
+        path.append(node)
+    if node == target:
+        return [path]
+    pathsList = []
     for c in items[node]:
         if c in path:
             continue
+        newPaths = pathsToTarget(c, target, list(path))
+        pathsList += newPaths
+    return pathsList
+
+def countLinks(paths):
+    counter = {}
+    for path in paths:
+        for i in range(len(path)-1):
+            a = path[i]
+            b = path[i+1]
+            pair = (a, b) if (a, b) in links else (b, a)
+            counter[pair] = 1 if pair not in counter else counter[pair] + 1
+    return counter
+
 
 
 def dijkstra(node):
     visited = {}
     queue = []
-    heapq.heappush(queue, (0, (0, node)))
+    heapq.heappush(queue, (0, node))
     while queue:
         depth, node = heapq.heappop(queue)
         if node not in visited or visited[node] > depth:
             visited[node] = depth
         for c in items[node]:
             if c not in visited:
-                heapq.heappush(queue, (depth+1, (depth+1, c)))
+                heapq.heappush(queue, (depth+1, c))
     return visited
 
 
 
 
-items = []
+items = {}
 links = set()
 for line in lines:
     name = line.split(": ")[0]
-    if name not in mapItemsToNums:
-        mapItemsToNums[name] = len(items)
-        mapNumsToItems[len(items)] = name
-        items.append(set())
-    nameNum = mapItemsToNums[name]
+    if name not in items:
+        items[name] = []
     connected = line.split(": ")[1].split()
     for c in connected:
-        if c not in mapItemsToNums:
-            mapItemsToNums[c] = len(items)
-            mapNumsToItems[len(items)] = c
-            items.append(set())
-        cNum = mapItemsToNums[c]
-        items[nameNum].add(cNum)
-        items[cNum].add(nameNum)
-        if (cNum, nameNum) not in links:
-            links.add((nameNum, cNum))
+        if c not in items:
+            items[c] = []
+        items[name].append(c)
+        items[c].append(name)
+        if (c, name) not in links:
+            links.add((name, c))
 #print(items)
 #print(countGroups(items))
 #print(links)
 listLinks = list(links)
 print(len(listLinks))
-startItem = 0
+startItem = list(items.keys())[0]
 startTime = time.time()
 
-allNodesDepth
+allNodesDepth = dijkstra(startItem)
+print(allNodesDepth)
+furthestNode = [x for x in allNodesDepth if allNodesDepth[x] == max(allNodesDepth.values())][0]
+print(furthestNode)
+paths = pathsToTarget(startItem, furthestNode)
+print(len(paths))
+counter = countLinks(paths)
+print(counter)
+sortedLinks = sorted(counter.keys(), key=lambda x: counter[x], reverse=True)
+print(sortedLinks)
+allBrokenLinks = sortedLinks[0:2]
+dfs_findBridge(startItem, allBrokenLinks)
+exit(0)
 
 globalTime = time.time()
 for i in range(len(listLinks)-2):
